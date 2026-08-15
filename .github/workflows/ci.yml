@@ -20,6 +20,24 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+
+        env:
+          POSTGRES_DB: orderflow
+          POSTGRES_USER: orderflow
+          POSTGRES_PASSWORD: orderflow123
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U orderflow -d orderflow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -32,6 +50,10 @@ jobs:
           cache: maven
 
       - name: Run tests
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/orderflow
+          DB_USERNAME: orderflow
+          DB_PASSWORD: orderflow123
         run: mvn clean test
 
   docker:
