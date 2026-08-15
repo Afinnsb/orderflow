@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: orderflow-alert-test
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+
+spec:
+  groups:
+    - name: orderflow-test.rules
+      rules:
+        - alert: OrderFlowAlertmanagerTest
+          expr: vector(1)
+          for: 30s
+
+          labels:
+            severity: critical
+            service: orderflow-api
+
+          annotations:
+            summary: "OrderFlow Alertmanager test"
+            description: "Temporary test alert to verify Prometheus -> Alertmanager."

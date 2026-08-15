@@ -1,0 +1,54 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: orderflow-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+
+spec:
+  groups:
+    - name: orderflow-api.rules
+
+      rules:
+        - alert: OrderFlowHighErrorRate
+          expr: |
+            (
+              sum(rate(http_server_requests_seconds_count{
+                job="orderflow-api",
+                status=~"5.."
+              }[5m]))
+              /
+              clamp_min(
+                sum(rate(http_server_requests_seconds_count{
+                  job="orderflow-api"
+                }[5m])),
+                1
+              )
+            ) > 0.05
+          for: 2m
+
+          labels:
+            severity: warning
+            service: orderflow-api
+
+          annotations:
+            summary: "OrderFlow API has a high 5xx error rate"
+            description: "More than 5% of OrderFlow API requests have returned 5xx responses for at least 2 minutes."
+
+        - alert: OrderFlowInsufficientReplicas
+          expr: |
+            count(kube_pod_status_ready{
+              namespace="default",
+              condition="true",
+              pod=~"orderflow-api-.*"
+            }) < 3
+          for: 2m
+
+          labels:
+            severity: critical
+            service: orderflow-api
+
+          annotations:
+            summary: "OrderFlow API has insufficient ready replicas"
+            description: "Fewer than 3 OrderFlow API Pods have been ready for at least 2 minutes."
